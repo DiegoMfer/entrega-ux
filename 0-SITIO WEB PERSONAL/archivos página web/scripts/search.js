@@ -1,44 +1,78 @@
 $(document).ready(function() {
+    // Define the Levenshtein distance function
+    function levenshteinDistance(a, b) {
+        const matrix = [];
+        for (let i = 0; i <= b.length; i++) {
+            matrix[i] = [i];
+        }
+        for (let j = 0; j <= a.length; j++) {
+            matrix[0][j] = j;
+        }
+        for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j - 1] + 1, // substitution
+                        matrix[i][j - 1] + 1,     // insertion
+                        matrix[i - 1][j] + 1      // deletion
+                    );
+                }
+            }
+        }
+        return matrix[b.length][a.length];
+    }
+
     $('#search-button').on('click', function(event) {
-        event.preventDefault(); // Evita el salto de página
+        event.preventDefault(); // Prevents page reload
         const searchTerm = $('#search-input').val().toLowerCase();
         if (searchTerm) {
-            $('#search-results').empty();  // Limpiar resultados anteriores
+            $('#search-results').empty(); // Clear previous results
 
-            // Definimos el contenido hardcodeado de sitemap.xml como un objeto en JS
+            // Hardcoded sitemap content
             const sitemap = {
                 site: {
                     page: [
                         {
                             url: 'index.html',
                             title: 'Página Principal - Diego Martín Fernández',
-                            content: 'Sobre Mí Hola, soy Diego Martín Fernández, un ingeniero de software apasionado por la tecnología y el aprendizaje constante. Me gusta mantenerme activo haciendo deporte y también disfruto mucho de mis hobbies, como leer y tocar la guitarra. Me encanta descubrir y aprender nuevas habilidades, lo cual me motiva en mi vida personal y profesional. Mis Hobbies e Intereses - Lectura Leer es una de mis grandes pasiones. Me fascinan los géneros de fantasía y ciencia ficción, ya que permiten explorar mundos e ideas nuevas. Algunos de mis libros favoritos incluyen: - Fantasía: Las Crónicas de Narnia de C.S. Lewis - Ciencia Ficción: The Expanse de James S.A. Corey - Música Tocar la guitarra es otro de mis hobbies. Me gusta interpretar canciones de rock clásico, disfrutando de la música de bandas icónicas que marcaron generaciones. Algunas de mis bandas favoritas incluyen Led Zeppelin, Pink Floyd y The Beatles. La música es una forma de expresión para mí y un excelente modo de desconectar. - Motociclismo Montar en moto es una de mis actividades favoritas, ya que me permite sentir la libertad de la carretera y explorar nuevos lugares. Me encanta la aventura y la sensación de adrenalina que ofrece el motociclismo. - Otros Intereses Aparte de los hobbies mencionados, también me gusta explorar temas de tecnología, diseño de software entre otros. Disfruto del cine, especialmente las películas de ciencia ficción y documentales que expanden el conocimiento y la curiosidad.'
+                            content: 'Sobre Mí Hola, soy Diego Martín Fernández, un ingeniero de software apasionado...'
                         },
                         {
                             url: 'curriculum.html',
                             title: 'Currículum - Diego Martín Fernández',
-                            content: 'Mis proyectos - RDF in Zarr Proyecto de investigación sobre motores RDF usando tecnología de particionamiento de arrays en chunks - Proyecto Dataspaces agricultura de Málaga Proyecto europeo para usar tecnologías descentralizadas para modelar la información agrícola - Esta página web Página web personal'
+                            content: 'Mis proyectos - RDF in Zarr Proyecto de investigación sobre motores RDF...'
                         },
                         {
                             url: 'sobre_mi.html',
                             title: 'Sobre Mí - Diego Martín Fernández',
-                            content: 'Hola, soy Diego Martín Fernández, un ingeniero de software apasionado por la tecnología y el aprendizaje constante. Me gusta mantenerme activo haciendo deporte y también disfruto mucho de mis hobbies, como leer y tocar la guitarra. Me encanta descubrir y aprender nuevas habilidades, lo cual me motiva en mi vida personal y profesional...'
+                            content: 'Hola, soy Diego Martín Fernández, un ingeniero de software apasionado por la tecnología...'
                         }
                     ]
                 }
             };
-            
 
             const results = [];
+            const maxDistance = 1; // Define the maximum allowable distance for a "match"
 
-            // Iteramos sobre las páginas definidas en el objeto sitemap
             sitemap.site.page.forEach(function(page) {
                 const title = page.title;
                 const url = page.url;
                 const content = page.content.toLowerCase();
 
-                // Si el contenido contiene el término de búsqueda
-                if (content.includes(searchTerm)) {
+                // Calculate Levenshtein distance between searchTerm and content substring
+                let matchFound = false;
+                for (let i = 0; i < content.length - searchTerm.length + 1; i++) {
+                    const substring = content.substring(i, i + searchTerm.length);
+                    const distance = levenshteinDistance(searchTerm, substring);
+                    if (distance <= maxDistance) {
+                        matchFound = true;
+                        break;
+                    }
+                }
+
+                if (matchFound) {
                     results.push({
                         title: title,
                         url: url,
@@ -47,7 +81,7 @@ $(document).ready(function() {
                 }
             });
 
-            // Mostrar los resultados si se encuentran coincidencias
+            // Display results
             if (results.length > 0) {
                 results.forEach(result => {
                     $('#search-results').append(`
